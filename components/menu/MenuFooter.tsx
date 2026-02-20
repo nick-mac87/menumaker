@@ -71,11 +71,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
 
   return (
     <footer
-      className="px-6 py-10"
+      className="px-6 pt-8 pb-10"
       style={{
-        backgroundColor: "var(--menu-bg)",
+        backgroundColor: "var(--menu-surface)",
         color: "var(--menu-text)",
         fontFamily: "var(--menu-font-body)",
+        borderTop: "1px solid var(--menu-border)",
       }}
     >
       <div className="max-w-lg mx-auto flex flex-col gap-0">
