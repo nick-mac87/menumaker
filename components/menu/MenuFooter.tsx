@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Menu } from "@/lib/types";
 import {
   getWhatsAppUrl,
@@ -77,10 +78,10 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
         fontFamily: "var(--menu-font-body)",
       }}
     >
-      <div className="max-w-lg mx-auto flex flex-col gap-8">
+      <div className="max-w-lg mx-auto flex flex-col gap-0">
         {/* Opening hours */}
         {hasHours && formattedHours.length > 0 && (
-          <div>
+          <FooterSection>
             <SectionHeader icon={<Clock className="w-4 h-4" />} label="Opening Hours" />
             <div className="flex flex-col gap-1">
               {formattedHours.map((entry, i) => (
@@ -125,12 +126,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </FooterSection>
         )}
 
         {/* Location */}
         {restaurant.location.address && (
-          <div>
+          <FooterSection>
             <SectionHeader icon={<MapPin className="w-4 h-4" />} label="Location" />
             <a
               href={mapsUrl}
@@ -143,12 +144,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
               {restaurant.location.address}
               <ExternalLink className="w-3 h-3" />
             </a>
-          </div>
+          </FooterSection>
         )}
 
         {/* Contact */}
         {hasContact && (
-          <div>
+          <FooterSection>
             <SectionHeader icon={<Phone className="w-4 h-4" />} label="Contact" />
             <div className="flex flex-col gap-2">
               {/* WhatsApp - prominent */}
@@ -198,12 +199,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
                 </a>
               )}
             </div>
-          </div>
+          </FooterSection>
         )}
 
         {/* Social media */}
         {hasSocial && (
-          <div>
+          <FooterSection>
             <SectionHeader label="Follow Us" />
             <div className="flex flex-wrap gap-3">
               {restaurant.social.instagram && (
@@ -239,12 +240,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
                 />
               )}
             </div>
-          </div>
+          </FooterSection>
         )}
 
         {/* Delivery section */}
         {hasDelivery && (
-          <div>
+          <FooterSection>
             <SectionHeader label="Order Delivery" />
             <div className="flex flex-wrap gap-2">
               {delivery!.uberEats && (
@@ -289,12 +290,12 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
                 />
               ))}
             </div>
-          </div>
+          </FooterSection>
         )}
 
         {/* Book a Table */}
         {bookingEnabled && bookingUrl && (
-          <div>
+          <FooterSection>
             <a
               href={bookingUrl}
               target="_blank"
@@ -310,7 +311,7 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
               <Calendar className="w-4 h-4" />
               Book a Table
             </a>
-          </div>
+          </FooterSection>
         )}
 
         {/* Made with MenuMaker — hidden for pro plan */}
@@ -334,6 +335,19 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
 }
 
 /* ---- Helpers ---- */
+
+function FooterSection({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="py-5"
+      style={{
+        borderBottom: "1px solid var(--menu-border-subtle)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string }) {
   return (
