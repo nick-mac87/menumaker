@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
+import { Camera, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { compressImage } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ interface ImageUploadProps {
   maxWidth?: number;
   maxSizeKB?: number;
   className?: string;
+  /** Compact mode renders a small square thumbnail button instead of the full drop zone */
+  compact?: boolean;
 }
 
 export default function ImageUpload({
@@ -22,6 +25,7 @@ export default function ImageUpload({
   maxWidth = 1200,
   maxSizeKB = 500,
   className,
+  compact = false,
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -96,6 +100,99 @@ export default function ImageUpload({
     setError(null);
   }, [onClear, onChange]);
 
+  const hiddenInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      className="hidden"
+    />
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Compact variant                                                     */
+  /* ------------------------------------------------------------------ */
+  if (compact) {
+    if (value) {
+      return (
+        <div className={cn("flex flex-col gap-1", className)}>
+          {label && (
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          )}
+          <div className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
+            <img src={value} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-150 flex items-center justify-center gap-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="opacity-0 group-hover:opacity-100 rounded-md bg-background/90 p-1 text-foreground shadow-sm hover:bg-background transition-all duration-150"
+                title="Replace"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="opacity-0 group-hover:opacity-100 rounded-md bg-background/90 p-1 text-destructive shadow-sm hover:bg-destructive/10 transition-all duration-150"
+                title="Remove"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          {hiddenInput}
+        </div>
+      );
+    }
+
+    return (
+      <div className={cn("flex flex-col gap-1", className)}>
+        {label && (
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          disabled={isProcessing}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 w-20 h-20 rounded-lg border-2 border-dashed",
+            "transition-all duration-150 cursor-pointer",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            isDragging
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25 hover:border-muted-foreground/40 hover:bg-accent/50",
+            isProcessing && "opacity-60 cursor-wait"
+          )}
+        >
+          {isProcessing ? (
+            <svg
+              className="h-4 w-4 animate-spin text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          ) : (
+            <>
+              <Camera className="w-4 h-4 text-muted-foreground/50" />
+              <span className="text-[10px] font-medium text-muted-foreground/60">Add photo</span>
+            </>
+          )}
+        </button>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        {hiddenInput}
+      </div>
+    );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Full-size variant (default)                                         */
+  /* ------------------------------------------------------------------ */
   if (value) {
     return (
       <div className={cn("flex flex-col gap-1.5", className)}>
@@ -127,13 +224,7 @@ export default function ImageUpload({
             </div>
           </div>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+        {hiddenInput}
       </div>
     );
   }
@@ -211,13 +302,7 @@ export default function ImageUpload({
         )}
       </button>
       {error && <p className="text-xs text-destructive">{error}</p>}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {hiddenInput}
     </div>
   );
 }

@@ -143,21 +143,11 @@ export default function MenuItemRow({
       {/* Expanded inline editor */}
       {isExpanded && (
         <div
-          className="px-3 pb-4 pt-1 bg-accent/20 border-t border-border/30"
+          className="px-3 pb-4 pt-2 bg-accent/20 border-t border-border/30"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col gap-4 ml-7">
-            {/* Image */}
-            <ImageUpload
-              label="Photo"
-              value={item.image || undefined}
-              onChange={(base64) => onUpdate({ image: base64 })}
-              onClear={() => onUpdate({ image: undefined })}
-              maxWidth={600}
-              maxSizeKB={150}
-            />
-
-            {/* Name + Price */}
+          <div className="flex flex-col gap-3 ml-7">
+            {/* Row 1: Name + Price (most important — always visible first) */}
             <div className="flex gap-3">
               <Input
                 ref={nameInputRef}
@@ -188,48 +178,59 @@ export default function MenuItemRow({
               </div>
             </div>
 
-            {/* Description */}
+            {/* Row 2: Description (compact) */}
             <Textarea
               label="Description"
               value={item.description}
               onChange={(e) => onUpdate({ description: e.target.value })}
               placeholder="Describe this dish..."
-              className="min-h-[80px]"
+              className="min-h-[60px]"
             />
 
-            {/* Tags */}
-            <TagInput
-              label="Dietary Tags"
-              value={item.tags ?? []}
-              onChange={(tags) => onUpdate({ tags })}
-            />
-
-            {/* Badge */}
-            {enabledBadges.length > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Badge</label>
-                <Select
-                  value={item.badge || "__none__"}
-                  onValueChange={(val) =>
-                    onUpdate({ badge: val === "__none__" ? undefined : val })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {enabledBadges.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.icon} {b.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Row 3: Photo (compact square) + Tags & Badge side by side */}
+            <div className="flex gap-4 items-start">
+              <ImageUpload
+                compact
+                label="Photo"
+                value={item.image || undefined}
+                onChange={(base64) => onUpdate({ image: base64 })}
+                onClear={() => onUpdate({ image: undefined })}
+                maxWidth={600}
+                maxSizeKB={150}
+              />
+              <div className="flex-1 flex flex-col gap-3 min-w-0">
+                <TagInput
+                  label="Dietary Tags"
+                  value={item.tags ?? []}
+                  onChange={(tags) => onUpdate({ tags })}
+                />
+                {enabledBadges.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Badge</label>
+                    <Select
+                      value={item.badge || "__none__"}
+                      onValueChange={(val) =>
+                        onUpdate({ badge: val === "__none__" ? undefined : val })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {enabledBadges.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.icon} {b.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Availability + Delete row */}
+            {/* Row 4: Availability + Delete */}
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-3">
                 <Switch
