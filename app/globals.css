@@ -163,6 +163,19 @@ body {
   background-clip: text;
 }
 
+/* Category accent bar for menu editor */
+.category-accent-bar {
+  border-left: 4px solid hsl(var(--primary));
+  padding-left: 16px;
+}
+
+/* Drag overlay for DnD */
+.drag-overlay {
+  opacity: 0.9;
+  box-shadow: 0 12px 28px -8px rgba(160, 140, 120, 0.25);
+  border-radius: calc(var(--radius) + 4px);
+}
+
 /* Line clamp */
 .line-clamp-2 {
   display: -webkit-box;

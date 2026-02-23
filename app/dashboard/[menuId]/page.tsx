@@ -7,11 +7,10 @@ import { Menu, Category, MenuItem, BadgeConfig, DeliveryPlatform, ColorPreset, T
 import { themeDefinitions, themeToDesignFields, getThemeById } from "@/lib/themes";
 import { getMenu, saveMenu } from "@/lib/storage";
 import { getStatTotal, getLast7DaysTotal } from "@/lib/stats";
-import { CURRENCIES } from "@/lib/defaults";
 import { DEFAULT_BADGES } from "@/lib/badges";
 import { fontPairings } from "@/lib/fonts";
 import { colorPresets } from "@/lib/colors";
-import { cn, generateId, compressImage } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -20,13 +19,13 @@ import FontSelector from "@/components/ui/FontSelector";
 import PatternSelector from "@/components/ui/PatternSelector";
 import ImageUpload from "@/components/ui/ImageUpload";
 import ThemeSelector from "@/components/ui/ThemeSelector";
-import TagInput from "@/components/ui/TagInput";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import LivePreview from "@/components/onboarding/LivePreview";
 import QRCode from "@/components/ui/QRCode";
+import { CategoryList, MenuItemEditSheet, DeleteConfirmDialog } from "@/components/menu-editor";
+import { MemoizedMenuItemRow } from "@/components/menu-editor/MenuItemRow";
 
 import {
   BarChart3,
@@ -43,8 +42,6 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
-  ImagePlus,
-  X,
   Check,
   Printer,
   Download,
@@ -522,7 +519,6 @@ function StyleTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (pre
 
 function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev: Menu) => Menu) => void }) {
   const [expandedSections, setExpandedSections] = useState<Set<MenuSectionKey>>(() => new Set<MenuSectionKey>(["restaurant"]));
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set<string>());
 
   const toggleSection = useCallback((key: MenuSectionKey) => {
     setExpandedSections((prev) => {
@@ -533,14 +529,11 @@ function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev
     });
   }, []);
 
-  const toggleCategory = useCallback((id: string) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const handleCategoriesChange = useCallback((categories: Category[]) => {
+    updateMenu((prev) => ({ ...prev, categories }));
+  }, [updateMenu]);
+
+  const currentCurrency = menu.categories[0]?.items[0]?.currency || "R";
 
   return (
     <div className="space-y-4">
@@ -554,7 +547,12 @@ function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev
         <SpecialsSection menu={menu} updateMenu={updateMenu} />
       </CollapsibleSection>
       <CollapsibleSection title="Categories & Items" icon={<UtensilsCrossed className="h-4 w-4" />} expanded={expandedSections.has("categories")} onToggle={() => toggleSection("categories")}>
-        <CategoriesSection menu={menu} updateMenu={updateMenu} expandedCategories={expandedCategories} toggleCategory={toggleCategory} />
+        <CategoryList
+          categories={menu.categories}
+          badges={menu.badges}
+          currency={currentCurrency}
+          onCategoriesChange={handleCategoriesChange}
+        />
       </CollapsibleSection>
     </div>
   );
@@ -811,23 +809,37 @@ function BadgesSection({ menu, updateMenu }: { menu: Menu; updateMenu: (updater:
 }
 
 function SpecialsSection({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev: Menu) => Menu) => void }) {
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+
+  const currentCurrency = menu.categories[0]?.items[0]?.currency || "R";
+
   const addSpecialItem = useCallback(() => {
-    const newItem: MenuItem = { id: generateId(), name: "", description: "", price: 0, currency: menu.categories[0]?.items[0]?.currency || "R", tags: [], available: true };
+    const newItem: MenuItem = { id: generateId(), name: "", description: "", price: 0, currency: currentCurrency, tags: [], available: true };
     updateMenu((prev) => ({ ...prev, specials: { ...prev.specials, items: [...prev.specials.items, newItem] } }));
-  }, [updateMenu, menu.categories]);
+    setEditingItem(newItem);
+  }, [updateMenu, currentCurrency]);
 
-  const updateSpecialItem = useCallback((itemId: string, field: keyof MenuItem, value: unknown) => {
-    updateMenu((prev) => ({ ...prev, specials: { ...prev.specials, items: prev.specials.items.map((item) => (item.id === itemId ? { ...item, [field]: value } : item)) } }));
+  const updateSpecialItem = useCallback((updates: Partial<MenuItem>) => {
+    if (!editingItem) return;
+    const updatedItem = { ...editingItem, ...updates };
+    setEditingItem(updatedItem);
+    updateMenu((prev) => ({
+      ...prev,
+      specials: { ...prev.specials, items: prev.specials.items.map((item) => (item.id === editingItem.id ? updatedItem : item)) },
+    }));
+  }, [updateMenu, editingItem]);
+
+  const confirmDeleteItem = useCallback((itemId: string) => {
+    updateMenu((prev) => ({
+      ...prev,
+      specials: { ...prev.specials, items: prev.specials.items.filter((i) => i.id !== itemId) },
+    }));
+    setEditingItem(null);
+    setDeleteItemId(null);
   }, [updateMenu]);
 
-  const removeSpecialItem = useCallback((itemId: string) => {
-    updateMenu((prev) => {
-      const item = prev.specials.items.find((i) => i.id === itemId);
-      const label = item?.name || "this special";
-      if (!window.confirm(`Delete "${label}"?`)) return prev;
-      return { ...prev, specials: { ...prev.specials, items: prev.specials.items.filter((i) => i.id !== itemId) } };
-    });
-  }, [updateMenu]);
+  const deleteTarget = deleteItemId ? menu.specials.items.find((i) => i.id === deleteItemId) : null;
 
   return (
     <div className="space-y-4">
@@ -841,210 +853,41 @@ function SpecialsSection({ menu, updateMenu }: { menu: Menu; updateMenu: (update
       {menu.specials.enabled && (
         <>
           <Input label="Specials Title" value={menu.specials.title} onChange={(e) => updateMenu((prev) => ({ ...prev, specials: { ...prev.specials, title: e.target.value } }))} placeholder="e.g. Chef's Specials" />
-          <div className="space-y-3">
-            {menu.specials.items.map((item) => (
-              <MenuItemEditor key={item.id} item={item} badges={menu.badges} onUpdate={(field, value) => updateSpecialItem(item.id, field, value)} onRemove={() => removeSpecialItem(item.id)} />
-            ))}
-          </div>
+          {menu.specials.items.length > 0 && (
+            <div className="divide-y divide-border/50 rounded-lg border border-border/50 overflow-hidden bg-card">
+              {menu.specials.items.map((item) => (
+                <MemoizedMenuItemRow
+                  key={item.id}
+                  item={item}
+                  currency={currentCurrency}
+                  onEdit={() => setEditingItem(item)}
+                  onDelete={() => setDeleteItemId(item.id)}
+                />
+              ))}
+            </div>
+          )}
           <Button variant="ghost" size="sm" onClick={addSpecialItem}><Plus className="h-4 w-4" />Add Special Item</Button>
         </>
       )}
+
+      <MenuItemEditSheet
+        open={!!editingItem}
+        onOpenChange={(open) => { if (!open) setEditingItem(null); }}
+        item={editingItem}
+        badges={menu.badges}
+        currency={currentCurrency}
+        onUpdate={updateSpecialItem}
+        onDelete={() => { if (editingItem) setDeleteItemId(editingItem.id); }}
+      />
+
+      <DeleteConfirmDialog
+        open={!!deleteItemId}
+        onOpenChange={(open) => { if (!open) setDeleteItemId(null); }}
+        title="Delete special?"
+        description={`This will remove "${deleteTarget?.name || "this special"}" from your menu.`}
+        onConfirm={() => { if (deleteItemId) confirmDeleteItem(deleteItemId); }}
+      />
     </div>
   );
 }
 
-function CategoriesSection({ menu, updateMenu, expandedCategories, toggleCategory }: { menu: Menu; updateMenu: (updater: (prev: Menu) => Menu) => void; expandedCategories: Set<string>; toggleCategory: (id: string) => void }) {
-  const currentCurrency = menu.categories[0]?.items[0]?.currency || "R";
-
-  const updateAllCurrencies = useCallback((currency: string) => {
-    updateMenu((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat) => ({ ...cat, items: cat.items.map((item) => ({ ...item, currency })) })),
-      specials: { ...prev.specials, items: prev.specials.items.map((item) => ({ ...item, currency })) },
-    }));
-  }, [updateMenu]);
-
-  const addCategory = useCallback(() => {
-    const newCat: Category = { id: generateId(), name: "", items: [] };
-    updateMenu((prev) => ({ ...prev, categories: [...prev.categories, newCat] }));
-  }, [updateMenu]);
-
-  const removeCategory = useCallback((catId: string) => {
-    updateMenu((prev) => {
-      const cat = prev.categories.find((c) => c.id === catId);
-      const label = cat?.name || "this category";
-      if (!window.confirm(`Delete "${label}" and all its items?`)) return prev;
-      return { ...prev, categories: prev.categories.filter((c) => c.id !== catId) };
-    });
-  }, [updateMenu]);
-
-  const updateCategoryName = useCallback((catId: string, name: string) => {
-    updateMenu((prev) => ({ ...prev, categories: prev.categories.map((c) => (c.id === catId ? { ...c, name } : c)) }));
-  }, [updateMenu]);
-
-  const addItem = useCallback((catId: string) => {
-    const newItem: MenuItem = { id: generateId(), name: "", description: "", price: 0, currency: currentCurrency, tags: [], available: true };
-    updateMenu((prev) => ({ ...prev, categories: prev.categories.map((c) => (c.id === catId ? { ...c, items: [...c.items, newItem] } : c)) }));
-  }, [updateMenu, currentCurrency]);
-
-  const updateItem = useCallback((catId: string, itemId: string, field: keyof MenuItem, value: unknown) => {
-    updateMenu((prev) => ({
-      ...prev,
-      categories: prev.categories.map((c) => (c.id === catId ? { ...c, items: c.items.map((item) => (item.id === itemId ? { ...item, [field]: value } : item)) } : c)),
-    }));
-  }, [updateMenu]);
-
-  const removeItem = useCallback((catId: string, itemId: string) => {
-    updateMenu((prev) => {
-      const cat = prev.categories.find((c) => c.id === catId);
-      const item = cat?.items.find((i) => i.id === itemId);
-      const label = item?.name || "this item";
-      if (!window.confirm(`Delete "${label}"?`)) return prev;
-      return { ...prev, categories: prev.categories.map((c) => (c.id === catId ? { ...c, items: c.items.filter((i) => i.id !== itemId) } : c)) };
-    });
-  }, [updateMenu]);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-foreground">Currency:</label>
-        <Select value={currentCurrency} onValueChange={updateAllCurrencies}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CURRENCIES.map((c) => (
-              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {menu.categories.map((category) => {
-        const isExpanded = expandedCategories.has(category.id);
-        return (
-          <Collapsible key={category.id} open={isExpanded} onOpenChange={() => toggleCategory(category.id)}>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50">
-                <CollapsibleTrigger asChild>
-                  <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </button>
-                </CollapsibleTrigger>
-                <input type="text" value={category.name} onChange={(e) => updateCategoryName(category.id, e.target.value)} className="flex-1 bg-transparent text-sm font-semibold border-none outline-none placeholder:text-muted-foreground" placeholder="Category name" />
-                <span className="text-xs text-muted-foreground shrink-0">{category.items.length} item{category.items.length !== 1 ? "s" : ""}</span>
-                {menu.categories.length > 1 && (
-                  <button type="button" onClick={() => removeCategory(category.id)} className="p-1 text-muted-foreground hover:text-red-500 transition-colors shrink-0">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              <CollapsibleContent>
-                <div className="p-4 space-y-3">
-                  {category.items.map((item) => (
-                    <MenuItemEditor key={item.id} item={item} badges={menu.badges} onUpdate={(field, value) => updateItem(category.id, item.id, field, value)} onRemove={() => removeItem(category.id, item.id)} />
-                  ))}
-                  <Button variant="ghost" size="sm" onClick={() => addItem(category.id)}><Plus className="h-4 w-4" />Add Item</Button>
-                </div>
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-        );
-      })}
-
-      <Button variant="secondary" size="sm" onClick={addCategory}><Plus className="h-4 w-4" />Add Category</Button>
-    </div>
-  );
-}
-
-function MenuItemEditor({ item, badges, onUpdate, onRemove }: { item: MenuItem; badges: BadgeConfig[]; onUpdate: (field: keyof MenuItem, value: unknown) => void; onRemove: () => void }) {
-  const enabledBadges = badges.filter((b) => b.enabled);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleImageFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    try {
-      const base64 = await compressImage(file, 600, 150);
-      onUpdate("image", base64);
-    } catch {
-      // silently fail
-    }
-  };
-
-  return (
-    <div className="border border-border rounded-lg p-4 space-y-3 bg-white">
-      <div className="flex items-start gap-3">
-        {/* Image thumbnail */}
-        <div className="flex-shrink-0">
-          {item.image ? (
-            <div className="relative group w-16 h-16 rounded-lg overflow-hidden border border-border">
-              <img src={item.image} alt="" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => onUpdate("image", undefined)}
-                className="absolute top-0 right-0 p-0.5 bg-black/60 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ImagePlus className="w-4 h-4" />
-              <span className="text-[9px] font-medium">Photo</span>
-            </button>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageFile(file);
-              e.target.value = "";
-            }}
-          />
-        </div>
-
-        <div className="flex-1 space-y-3 min-w-0">
-          <div className="flex gap-3">
-            <Input value={item.name} onChange={(e) => onUpdate("name", e.target.value)} placeholder="Item name" className="flex-1" />
-            <Input type="number" value={item.price || ""} onChange={(e) => onUpdate("price", parseFloat(e.target.value) || 0)} placeholder="Price" className="w-24" />
-          </div>
-          <Input value={item.description} onChange={(e) => onUpdate("description", e.target.value)} placeholder="Description (optional)" />
-          <TagInput label="Dietary Tags" value={item.tags || []} onChange={(tags) => onUpdate("tags", tags)} />
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-muted-foreground">Badge:</label>
-              <Select value={item.badge || "__none__"} onValueChange={(val) => onUpdate("badge", val === "__none__" ? undefined : val)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {enabledBadges.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.icon} {b.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={item.available}
-                onCheckedChange={(checked) => onUpdate("available", checked)}
-              />
-              <span className={cn("text-xs", item.available ? "text-green-600" : "text-muted-foreground")}>{item.available ? "Available" : "Unavailable"}</span>
-            </div>
-          </div>
-        </div>
-        <button type="button" onClick={onRemove} className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0 mt-1">
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
