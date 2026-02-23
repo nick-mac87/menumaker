@@ -25,7 +25,6 @@ import { generateId } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import ImageUpload from "@/components/ui/ImageUpload";
 import { MemoizedMenuItemRow } from "./MenuItemRow";
-import MenuItemEditSheet from "./MenuItemEditSheet";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import EmptyState from "./EmptyState";
 
@@ -50,7 +49,8 @@ export default function CategoryCard({
   onDelete,
   canDelete,
 }: CategoryCardProps) {
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  // Track which items are expanded for inline editing
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ type: "category" | "item"; id?: string } | null>(null);
   const [showCategoryImage, setShowCategoryImage] = useState(!!category.image);
 
@@ -74,6 +74,15 @@ export default function CategoryCard({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const toggleItemExpanded = useCallback((itemId: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }, []);
 
   const handleItemDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -103,22 +112,20 @@ export default function CategoryCard({
       available: true,
     };
     onUpdate({ ...category, items: [...category.items, newItem] });
-    setEditingItem(newItem);
+    // Auto-expand the new item so user can start typing immediately
+    setExpandedItems((prev) => new Set([...prev, newItem.id]));
   }, [category, currency, onUpdate]);
 
   const updateItem = useCallback(
-    (updates: Partial<MenuItem>) => {
-      if (!editingItem) return;
-      const updatedItem = { ...editingItem, ...updates };
-      setEditingItem(updatedItem);
+    (itemId: string, updates: Partial<MenuItem>) => {
       onUpdate({
         ...category,
         items: category.items.map((i) =>
-          i.id === editingItem.id ? updatedItem : i
+          i.id === itemId ? { ...i, ...updates } : i
         ),
       });
     },
-    [editingItem, category, onUpdate]
+    [category, onUpdate]
   );
 
   const confirmDeleteItem = useCallback(
@@ -127,16 +134,15 @@ export default function CategoryCard({
         ...category,
         items: category.items.filter((i) => i.id !== itemId),
       });
-      setEditingItem(null);
+      setExpandedItems((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
       setDeleteTarget(null);
     },
     [category, onUpdate]
   );
-
-  const handleDeleteFromSheet = useCallback(() => {
-    if (!editingItem) return;
-    setDeleteTarget({ type: "item", id: editingItem.id });
-  }, [editingItem]);
 
   return (
     <>
@@ -272,8 +278,11 @@ export default function CategoryCard({
                       <MemoizedMenuItemRow
                         key={item.id}
                         item={item}
+                        badges={badges}
                         currency={currency}
-                        onEdit={() => setEditingItem(item)}
+                        isExpanded={expandedItems.has(item.id)}
+                        onToggleExpand={() => toggleItemExpanded(item.id)}
+                        onUpdate={(updates) => updateItem(item.id, updates)}
                         onDelete={() =>
                           setDeleteTarget({ type: "item", id: item.id })
                         }
@@ -298,19 +307,6 @@ export default function CategoryCard({
           </div>
         )}
       </div>
-
-      {/* Item edit sheet */}
-      <MenuItemEditSheet
-        open={!!editingItem}
-        onOpenChange={(open) => {
-          if (!open) setEditingItem(null);
-        }}
-        item={editingItem}
-        badges={badges}
-        currency={currency}
-        onUpdate={updateItem}
-        onDelete={handleDeleteFromSheet}
-      />
 
       {/* Delete confirmation */}
       <DeleteConfirmDialog

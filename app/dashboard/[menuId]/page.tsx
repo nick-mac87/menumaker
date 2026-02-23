@@ -24,8 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import LivePreview from "@/components/onboarding/LivePreview";
 import QRCode from "@/components/ui/QRCode";
-import { CategoryList, MenuItemEditSheet, DeleteConfirmDialog } from "@/components/menu-editor";
-import { MemoizedMenuItemRow } from "@/components/menu-editor/MenuItemRow";
+import { CategoryList, DeleteConfirmDialog, MemoizedMenuItemRow } from "@/components/menu-editor";
 
 import {
   BarChart3,
@@ -809,33 +808,44 @@ function BadgesSection({ menu, updateMenu }: { menu: Menu; updateMenu: (updater:
 }
 
 function SpecialsSection({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev: Menu) => Menu) => void }) {
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
   const currentCurrency = menu.categories[0]?.items[0]?.currency || "R";
 
+  const toggleItemExpanded = useCallback((itemId: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }, []);
+
   const addSpecialItem = useCallback(() => {
     const newItem: MenuItem = { id: generateId(), name: "", description: "", price: 0, currency: currentCurrency, tags: [], available: true };
     updateMenu((prev) => ({ ...prev, specials: { ...prev.specials, items: [...prev.specials.items, newItem] } }));
-    setEditingItem(newItem);
+    // Auto-expand the new item
+    setExpandedItems((prev) => new Set([...prev, newItem.id]));
   }, [updateMenu, currentCurrency]);
 
-  const updateSpecialItem = useCallback((updates: Partial<MenuItem>) => {
-    if (!editingItem) return;
-    const updatedItem = { ...editingItem, ...updates };
-    setEditingItem(updatedItem);
+  const updateSpecialItem = useCallback((itemId: string, updates: Partial<MenuItem>) => {
     updateMenu((prev) => ({
       ...prev,
-      specials: { ...prev.specials, items: prev.specials.items.map((item) => (item.id === editingItem.id ? updatedItem : item)) },
+      specials: { ...prev.specials, items: prev.specials.items.map((item) => (item.id === itemId ? { ...item, ...updates } : item)) },
     }));
-  }, [updateMenu, editingItem]);
+  }, [updateMenu]);
 
   const confirmDeleteItem = useCallback((itemId: string) => {
     updateMenu((prev) => ({
       ...prev,
       specials: { ...prev.specials, items: prev.specials.items.filter((i) => i.id !== itemId) },
     }));
-    setEditingItem(null);
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
     setDeleteItemId(null);
   }, [updateMenu]);
 
@@ -859,8 +869,11 @@ function SpecialsSection({ menu, updateMenu }: { menu: Menu; updateMenu: (update
                 <MemoizedMenuItemRow
                   key={item.id}
                   item={item}
+                  badges={menu.badges}
                   currency={currentCurrency}
-                  onEdit={() => setEditingItem(item)}
+                  isExpanded={expandedItems.has(item.id)}
+                  onToggleExpand={() => toggleItemExpanded(item.id)}
+                  onUpdate={(updates) => updateSpecialItem(item.id, updates)}
                   onDelete={() => setDeleteItemId(item.id)}
                 />
               ))}
@@ -869,16 +882,6 @@ function SpecialsSection({ menu, updateMenu }: { menu: Menu; updateMenu: (update
           <Button variant="ghost" size="sm" onClick={addSpecialItem}><Plus className="h-4 w-4" />Add Special Item</Button>
         </>
       )}
-
-      <MenuItemEditSheet
-        open={!!editingItem}
-        onOpenChange={(open) => { if (!open) setEditingItem(null); }}
-        item={editingItem}
-        badges={menu.badges}
-        currency={currentCurrency}
-        onUpdate={updateSpecialItem}
-        onDelete={() => { if (editingItem) setDeleteItemId(editingItem.id); }}
-      />
 
       <DeleteConfirmDialog
         open={!!deleteItemId}
