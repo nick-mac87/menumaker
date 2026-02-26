@@ -300,16 +300,147 @@ export default function LandingPage() {
       </section>
 
       {/* \u2500\u2500 Final CTA \u2500\u2500 */}
-      <section className="bg-section-tint py-24 md:py-32 px-6 text-center">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground mb-8">
-          Ready to get started?
-        </h2>
-        <Link
-          href="/create"
-          className="inline-flex items-center px-10 py-4 text-lg font-bold text-primary-foreground bg-primary rounded-full hover:bg-[#d4654f] transition-all duration-200 shadow-warm-lg active:scale-[0.98]"
-        >
-          Start building your menu
-        </Link>
+      <section className="relative bg-[#1a1625] overflow-hidden py-24 md:py-32 px-6">
+        {/* Subtle gradient accent */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1625] via-[#1e1a2a] to-[#1a1625]" />
+
+        <div className="relative max-w-6xl mx-auto">
+          {/* Heading */}
+          <div className="text-center mb-16 md:mb-20">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+              One tool, endless styles
+            </h2>
+            <p className="text-lg text-gray-400 max-w-lg mx-auto">
+              From casual brunch spots to fine dining &mdash; your menu matches your brand.
+            </p>
+          </div>
+
+          {/* 3 phone mockups showing different themes */}
+          <div className="flex items-end justify-center gap-6 md:gap-10 mb-16 md:mb-20">
+            {/* Mockup 1: Funky & Bold (left, slightly shorter) */}
+            <div className="hidden sm:flex rounded-[1.8rem] border-[4px] border-gray-700/60 shadow-2xl w-44 md:w-52 aspect-[9/16] overflow-hidden flex-col mb-4">
+              <div className="flex justify-center bg-[#0F0A1A] pt-1.5 pb-0.5">
+                <div className="w-12 h-2.5 bg-gray-900 rounded-b-lg" />
+              </div>
+              <div className="bg-[#1A1230] text-[#F5F0FF] px-4 py-5 text-center flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-[#E040FB]/20 flex items-center justify-center text-xs font-bold text-[#E040FB]">NR</div>
+                <h3 className="text-sm font-bold" style={{ fontFamily: "Impact, Arial Black, sans-serif" }}>Neon Ramen</h3>
+                <p className="text-[9px] text-[#7B6A9E]">Late-night bowls &amp; cocktails</p>
+              </div>
+              <div className="bg-[#0F0A1A] flex gap-1 px-3 py-1.5 overflow-hidden">
+                {["Bowls", "Sides", "Drinks"].map((c) => (
+                  <span key={c} className="flex-shrink-0 px-2 py-0.5 text-[8px] font-medium rounded-full border border-[#2D2450] text-[#C4B8E0] whitespace-nowrap">{c}</span>
+                ))}
+              </div>
+              <div className="flex-1 bg-[#0F0A1A] px-3 py-2 flex flex-col gap-1.5">
+                {[
+                  { name: "Spicy Miso Ramen", price: "R165" },
+                  { name: "Gyoza (6pc)", price: "R85" },
+                  { name: "Matcha Highball", price: "R75" },
+                ].map((item) => (
+                  <div key={item.name} className="flex items-start justify-between py-1 border-b border-[#2D2450]/50 last:border-0">
+                    <p className="text-[9px] font-medium text-[#F5F0FF]">{item.name}</p>
+                    <span className="text-[9px] font-semibold text-[#E040FB] flex-shrink-0 ml-1">{item.price}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center bg-[#0F0A1A] py-1.5">
+                <div className="w-12 h-0.5 bg-gray-700 rounded-full" />
+              </div>
+            </div>
+
+            {/* Mockup 2: Classic & Timeless (center, largest) */}
+            <div className="flex rounded-[2rem] border-[5px] border-gray-700/60 shadow-2xl w-52 md:w-64 aspect-[9/16] overflow-hidden flex-col ring-1 ring-white/10">
+              <div className="flex justify-center bg-[#F8F5EE] pt-2 pb-0.5">
+                <div className="w-14 h-3 bg-gray-900 rounded-b-lg" />
+              </div>
+              <div className="bg-[#6B4F10] text-white px-4 py-6 text-center flex flex-col items-center gap-1.5">
+                <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">LB</div>
+                <h3 className="text-base font-bold" style={{ fontFamily: "Georgia, serif" }}>Le Bistrot</h3>
+                <p className="text-[9px] text-white/60">French comfort, Cape Town soul</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center">
+                    <MessageCircle className="w-3 h-3 text-white/70" />
+                  </div>
+                  <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center">
+                    <MapPin className="w-3 h-3 text-white/70" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[#F8F5EE] flex gap-1 px-3 py-1.5 overflow-hidden">
+                {["Entr\u00e9es", "Plats", "Desserts", "Vins"].map((c) => (
+                  <span key={c} className="flex-shrink-0 px-2 py-0.5 text-[8px] font-medium rounded-full border border-[#E5DFD0] text-[#6B5D4A] whitespace-nowrap">{c}</span>
+                ))}
+              </div>
+              <div className="flex-1 bg-[#F8F5EE] px-3 py-2 flex flex-col gap-1.5">
+                {[
+                  { name: "Soupe \u00e0 l'Oignon", price: "R95" },
+                  { name: "Coq au Vin", price: "R285" },
+                  { name: "Cr\u00e8me Br\u00fbl\u00e9e", price: "R85" },
+                  { name: "Tarte Tatin", price: "R95" },
+                ].map((item) => (
+                  <div key={item.name} className="flex items-start justify-between py-1 border-b border-[#E5DFD0] last:border-0">
+                    <p className="text-[9px] font-medium text-[#2C2416]" style={{ fontFamily: "Georgia, serif" }}>{item.name}</p>
+                    <span className="text-[9px] font-semibold text-[#8B6914] flex-shrink-0 ml-1">{item.price}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center bg-[#F8F5EE] py-1.5">
+                <div className="w-14 h-0.5 bg-[#E5DFD0] rounded-full" />
+              </div>
+            </div>
+
+            {/* Mockup 3: Chic & Minimal (right, slightly shorter) */}
+            <div className="hidden sm:flex rounded-[1.8rem] border-[4px] border-gray-700/60 shadow-2xl w-44 md:w-52 aspect-[9/16] overflow-hidden flex-col mb-4">
+              <div className="flex justify-center bg-white pt-1.5 pb-0.5">
+                <div className="w-12 h-2.5 bg-gray-900 rounded-b-lg" />
+              </div>
+              <div className="bg-[#111111] text-white px-4 py-5 text-center flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">O.</div>
+                <h3 className="text-sm font-bold" style={{ fontFamily: "Georgia, serif" }}>Otium</h3>
+                <p className="text-[9px] text-white/40">Modern plates, considered wine</p>
+              </div>
+              <div className="bg-white flex gap-1 px-3 py-1.5 overflow-hidden">
+                {["Raw", "Land", "Sea", "Sweet"].map((c) => (
+                  <span key={c} className="flex-shrink-0 px-2 py-0.5 text-[8px] font-medium rounded-full border border-[#EBEBEB] text-[#555555] whitespace-nowrap">{c}</span>
+                ))}
+              </div>
+              <div className="flex-1 bg-white px-3 py-2 flex flex-col gap-1.5">
+                {[
+                  { name: "Tuna Tartare", price: "R145" },
+                  { name: "Duck Breast", price: "R295" },
+                  { name: "Panna Cotta", price: "R95" },
+                ].map((item) => (
+                  <div key={item.name} className="flex items-start justify-between py-1 border-b border-[#EBEBEB] last:border-0">
+                    <p className="text-[9px] font-medium text-[#111111]" style={{ fontFamily: "Helvetica Neue, Helvetica, sans-serif" }}>{item.name}</p>
+                    <span className="text-[9px] font-semibold text-[#111111] flex-shrink-0 ml-1">{item.price}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center bg-white py-1.5">
+                <div className="w-12 h-0.5 bg-[#EBEBEB] rounded-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* CTA buttons */}
+          <div className="text-center">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/create"
+                className="inline-flex items-center px-10 py-4 text-lg font-bold text-primary-foreground bg-primary rounded-full hover:bg-[#d4654f] transition-all duration-200 shadow-lg active:scale-[0.98]"
+              >
+                Create your free menu
+              </Link>
+              <Link
+                href="/menu/demo-the-yard"
+                className="inline-flex items-center px-8 py-4 text-lg font-semibold text-gray-300 rounded-full border border-gray-600 hover:border-gray-400 hover:text-white transition-all duration-200"
+              >
+                See a live demo
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* \u2500\u2500 Footer \u2500\u2500 */}
