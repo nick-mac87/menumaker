@@ -116,7 +116,7 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
           <Link
             href="/create"
-            className="inline-flex items-center px-10 py-4 text-lg font-bold text-primary-foreground bg-primary rounded-full hover:bg-[#d4654f] transition-all duration-200 shadow-warm-lg active:scale-[0.98] animate-pulse-glow"
+            className="inline-flex items-center px-10 py-4 text-lg font-bold text-primary-foreground bg-primary rounded-full hover:bg-[#d4654f] transition-all duration-200 shadow-warm-lg active:scale-[0.98]"
           >
             Create your menu &mdash; it&apos;s free
           </Link>
