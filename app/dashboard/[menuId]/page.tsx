@@ -47,7 +47,11 @@ import {
   Globe,
   Award,
   Sparkles,
+  Camera,
+  X,
 } from "lucide-react";
+
+import ScanMenuUpload from "@/components/onboarding/ScanMenuUpload";
 
 type TabKey = "share" | "style" | "menu";
 
@@ -518,6 +522,7 @@ function StyleTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (pre
 
 function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev: Menu) => Menu) => void }) {
   const [expandedSections, setExpandedSections] = useState<Set<MenuSectionKey>>(() => new Set<MenuSectionKey>(["restaurant"]));
+  const [showScanModal, setShowScanModal] = useState(false);
 
   const toggleSection = useCallback((key: MenuSectionKey) => {
     setExpandedSections((prev) => {
@@ -531,6 +536,20 @@ function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev
   const handleCategoriesChange = useCallback((categories: Category[]) => {
     updateMenu((prev) => ({ ...prev, categories }));
   }, [updateMenu]);
+
+  const handleScanSuccess = useCallback((scanned: Category[]) => {
+    const hasItems = menu.categories.some((c) => c.items.length > 0);
+    if (hasItems) {
+      if (window.confirm("Append scanned items to your existing menu? (Cancel to replace)")) {
+        updateMenu((prev) => ({ ...prev, categories: [...prev.categories, ...scanned] }));
+      } else {
+        updateMenu((prev) => ({ ...prev, categories: scanned }));
+      }
+    } else {
+      updateMenu((prev) => ({ ...prev, categories: scanned }));
+    }
+    setShowScanModal(false);
+  }, [menu.categories, updateMenu]);
 
   const currentCurrency = menu.categories[0]?.items[0]?.currency || "R";
 
@@ -546,13 +565,34 @@ function MenuTab({ menu, updateMenu }: { menu: Menu; updateMenu: (updater: (prev
         <SpecialsSection menu={menu} updateMenu={updateMenu} />
       </CollapsibleSection>
       <CollapsibleSection title="Categories & Items" icon={<UtensilsCrossed className="h-4 w-4" />} expanded={expandedSections.has("categories")} onToggle={() => toggleSection("categories")}>
-        <CategoryList
-          categories={menu.categories}
-          badges={menu.badges}
-          currency={currentCurrency}
-          onCategoriesChange={handleCategoriesChange}
-        />
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => setShowScanModal(true)}>
+            <Camera className="h-4 w-4" />
+            Scan menu photo
+          </Button>
+          <CategoryList
+            categories={menu.categories}
+            badges={menu.badges}
+            currency={currentCurrency}
+            onCategoriesChange={handleCategoriesChange}
+          />
+        </div>
       </CollapsibleSection>
+
+      {/* Scan modal */}
+      {showScanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card rounded-2xl shadow-warm-lg border border-border w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-foreground">Scan menu photo</h3>
+              <button type="button" onClick={() => setShowScanModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <ScanMenuUpload onSuccess={handleScanSuccess} onSkip={() => setShowScanModal(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

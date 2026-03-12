@@ -5,6 +5,9 @@ import { Menu, Category } from "@/lib/types";
 import { CURRENCIES } from "@/lib/defaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CategoryList } from "@/components/menu-editor";
+import ScanMenuUpload from "@/components/onboarding/ScanMenuUpload";
+import { Camera } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface StepProps {
   menu: Menu;
@@ -15,6 +18,9 @@ interface StepProps {
 
 export default function Step4Menu({ menu, updateMenu }: StepProps) {
   const { categories } = menu;
+  const [showRescan, setShowRescan] = useState(false);
+
+  const hasItems = categories.some((c) => c.items.length > 0);
 
   // Determine default currency from first item in first category, or 'R'
   const defaultCurrency =
@@ -41,6 +47,25 @@ export default function Step4Menu({ menu, updateMenu }: StepProps) {
     [updateMenu]
   );
 
+  const handleScanSuccess = useCallback(
+    (scanned: Category[]) => {
+      if (hasItems) {
+        if (window.confirm("Append scanned items to your existing menu? (Cancel to replace)")) {
+          updateMenu({ categories: [...categories, ...scanned] });
+        } else {
+          updateMenu({ categories: scanned });
+        }
+      } else {
+        updateMenu({ categories: scanned });
+      }
+      setShowRescan(false);
+      // Sync currency from scanned items
+      const firstCurrency = scanned.flatMap((c) => c.items).find((i) => i.currency)?.currency;
+      if (firstCurrency) setCurrency(firstCurrency);
+    },
+    [categories, hasItems, updateMenu]
+  );
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -49,6 +74,39 @@ export default function Step4Menu({ menu, updateMenu }: StepProps) {
           Add categories and items. You can always edit these later.
         </p>
       </div>
+
+      {/* Scan menu shortcut */}
+      {!hasItems && !showRescan && (
+        <div className="rounded-2xl border border-border bg-card shadow-warm-sm p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Camera className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Got a physical menu? Scan it</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Upload a photo and AI will extract your categories and items automatically.
+          </p>
+          <ScanMenuUpload onSuccess={handleScanSuccess} onSkip={() => {}} />
+        </div>
+      )}
+
+      {hasItems && !showRescan && (
+        <Button variant="ghost" size="sm" onClick={() => setShowRescan(true)} className="self-start">
+          <Camera className="h-4 w-4" />
+          Re-scan menu photo
+        </Button>
+      )}
+
+      {showRescan && (
+        <div className="rounded-2xl border border-border bg-card shadow-warm-sm p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Scan menu photo</h3>
+            <button type="button" onClick={() => setShowRescan(false)} className="text-xs text-muted-foreground hover:text-foreground">
+              Cancel
+            </button>
+          </div>
+          <ScanMenuUpload onSuccess={handleScanSuccess} onSkip={() => setShowRescan(false)} />
+        </div>
+      )}
 
       {/* Currency selector */}
       <div className="flex flex-col gap-1.5">
