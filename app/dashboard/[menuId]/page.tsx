@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Menu, Category, MenuItem, BadgeConfig, DeliveryPlatform, ColorPreset, ThemeId } from "@/lib/types";
+import { Menu, Category, MenuItem, BadgeConfig, ColorPreset, ThemeId } from "@/lib/types";
 import { themeDefinitions, themeToDesignFields, getThemeById } from "@/lib/themes";
 import { getMenu, saveMenu } from "@/lib/storage";
 import { getStatTotal, getLast7DaysTotal } from "@/lib/stats";
@@ -22,6 +22,7 @@ import ThemeSelector from "@/components/ui/ThemeSelector";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import DeliveryPlatformCards from "@/components/ui/DeliveryPlatformCards";
 import LivePreview from "@/components/onboarding/LivePreview";
 import QRCode from "@/components/ui/QRCode";
 import { CategoryList, DeleteConfirmDialog, MemoizedMenuItemRow } from "@/components/menu-editor";
@@ -637,10 +638,6 @@ function RestaurantInfoSection({ menu, updateMenu }: { menu: Menu; updateMenu: (
     updateMenu((prev) => ({ ...prev, restaurant: { ...prev.restaurant, location: { ...prev.restaurant.location, [field]: value } } }));
   }, [updateMenu]);
 
-  const updateDelivery = useCallback((field: string, value: string) => {
-    updateMenu((prev) => ({ ...prev, restaurant: { ...prev.restaurant, delivery: { ...(prev.restaurant.delivery || {}), [field]: value } } }));
-  }, [updateMenu]);
-
   const hours = menu.restaurant.hours || {};
   const hoursEntries = Object.entries(hours);
 
@@ -674,31 +671,6 @@ function RestaurantInfoSection({ menu, updateMenu }: { menu: Menu; updateMenu: (
       const newHours = { ...(prev.restaurant.hours || {}) };
       delete newHours[key];
       return { ...prev, restaurant: { ...prev.restaurant, hours: newHours } };
-    });
-  }, [updateMenu]);
-
-  const customDelivery = menu.restaurant.delivery?.custom || [];
-
-  const addCustomDelivery = useCallback(() => {
-    updateMenu((prev) => ({
-      ...prev,
-      restaurant: { ...prev.restaurant, delivery: { ...(prev.restaurant.delivery || {}), custom: [...(prev.restaurant.delivery?.custom || []), { name: "", url: "" }] } },
-    }));
-  }, [updateMenu]);
-
-  const updateCustomDelivery = useCallback((index: number, field: keyof DeliveryPlatform, value: string) => {
-    updateMenu((prev) => {
-      const custom = [...(prev.restaurant.delivery?.custom || [])];
-      custom[index] = { ...custom[index], [field]: value };
-      return { ...prev, restaurant: { ...prev.restaurant, delivery: { ...(prev.restaurant.delivery || {}), custom } } };
-    });
-  }, [updateMenu]);
-
-  const removeCustomDelivery = useCallback((index: number) => {
-    updateMenu((prev) => {
-      const custom = [...(prev.restaurant.delivery?.custom || [])];
-      custom.splice(index, 1);
-      return { ...prev, restaurant: { ...prev.restaurant, delivery: { ...(prev.restaurant.delivery || {}), custom } } };
     });
   }, [updateMenu]);
 
@@ -752,22 +724,10 @@ function RestaurantInfoSection({ menu, updateMenu }: { menu: Menu; updateMenu: (
 
       <div>
         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Delivery Platforms</h4>
-        <div className="space-y-3">
-          <Input label="Uber Eats URL" value={menu.restaurant.delivery?.uberEats || ""} onChange={(e) => updateDelivery("uberEats", e.target.value)} placeholder="https://www.ubereats.com/store/..." />
-          <Input label="Wolt URL" value={menu.restaurant.delivery?.wolt || ""} onChange={(e) => updateDelivery("wolt", e.target.value)} placeholder="https://wolt.com/..." />
-          <Input label="Mr D URL" value={menu.restaurant.delivery?.mrD || ""} onChange={(e) => updateDelivery("mrD", e.target.value)} placeholder="https://www.mrd.co.za/..." />
-          <Input label="Deliveroo URL" value={menu.restaurant.delivery?.deliveroo || ""} onChange={(e) => updateDelivery("deliveroo", e.target.value)} placeholder="https://deliveroo.com/..." />
-          {customDelivery.map((platform, idx) => (
-            <div key={idx} className="flex gap-2 items-start">
-              <Input value={platform.name} onChange={(e) => updateCustomDelivery(idx, "name", e.target.value)} placeholder="Platform name" className="flex-1" />
-              <Input value={platform.url} onChange={(e) => updateCustomDelivery(idx, "url", e.target.value)} placeholder="https://..." className="flex-1" />
-              <button type="button" onClick={() => removeCustomDelivery(idx)} className="mt-2 p-1.5 text-muted-foreground hover:text-red-500 transition-colors">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <Button variant="ghost" size="sm" onClick={addCustomDelivery}><Plus className="h-4 w-4" />Add Custom Delivery Link</Button>
-        </div>
+        <DeliveryPlatformCards
+          delivery={menu.restaurant.delivery}
+          onChange={(delivery) => updateMenu((prev) => ({ ...prev, restaurant: { ...prev.restaurant, delivery } }))}
+        />
       </div>
 
       <div>

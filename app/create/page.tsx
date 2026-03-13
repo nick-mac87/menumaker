@@ -8,14 +8,15 @@ import { saveMenu, saveDraft, getDraft, clearDraft } from "@/lib/storage";
 import ProgressBar from "@/components/onboarding/ProgressBar";
 import Step1Name from "@/components/onboarding/Step1Name";
 import Step2Location from "@/components/onboarding/Step2Location";
-import Step3Design from "@/components/onboarding/Step3Design";
-import Step4Menu from "@/components/onboarding/Step4Menu";
-import Step5Specials from "@/components/onboarding/Step5Specials";
-import Step6Launch from "@/components/onboarding/Step6Launch";
+import Step3Delivery from "@/components/onboarding/Step3Delivery";
+import Step4Design from "@/components/onboarding/Step3Design";
+import Step5Menu from "@/components/onboarding/Step4Menu";
+import Step6Specials from "@/components/onboarding/Step5Specials";
+import Step7Launch from "@/components/onboarding/Step6Launch";
 import LivePreview from "@/components/onboarding/LivePreview";
 import Button from "@/components/ui/Button";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 export default function CreatePage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -86,12 +87,12 @@ export default function CreatePage() {
     switch (currentStep) {
       case 1:
         return menu.restaurant.name.trim().length > 0;
-      case 4:
+      case 5:
         // At least one category with at least one named item
         return menu.categories.some(
           (cat) => cat.name.trim().length > 0 && cat.items.some((item) => item.name.trim().length > 0)
         );
-      case 5:
+      case 6:
         // Re-check menu completeness before final launch
         return menu.categories.some(
           (cat) => cat.name.trim().length > 0 && cat.items.some((item) => item.name.trim().length > 0)
@@ -102,11 +103,11 @@ export default function CreatePage() {
   };
 
   const handleNext = () => {
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       // Save the menu and advance to launch step
       saveMenu(menu);
       clearDraft();
-      setCurrentStep(6);
+      setCurrentStep(7);
       return;
     }
     if (currentStep < TOTAL_STEPS) {
@@ -132,13 +133,15 @@ export default function CreatePage() {
       case 2:
         return <Step2Location {...stepProps} />;
       case 3:
-        return <Step3Design {...stepProps} />;
+        return <Step3Delivery {...stepProps} />;
       case 4:
-        return <Step4Menu {...stepProps} />;
+        return <Step4Design {...stepProps} />;
       case 5:
-        return <Step5Specials {...stepProps} />;
+        return <Step5Menu {...stepProps} />;
       case 6:
-        return <Step6Launch {...stepProps} menuUrl={menuUrl} />;
+        return <Step6Specials {...stepProps} />;
+      case 7:
+        return <Step7Launch {...stepProps} menuUrl={menuUrl} />;
       default:
         return null;
     }
@@ -167,7 +170,7 @@ export default function CreatePage() {
         </div>
 
         {/* Live preview (desktop) — fills column height, no outer scroll */}
-        {currentStep < 6 && (
+        {currentStep < 7 && (
           <div className="hidden lg:flex w-[380px] border-l border-border bg-card p-8 flex-col min-h-0">
             <LivePreview menu={menu} />
           </div>
@@ -175,7 +178,7 @@ export default function CreatePage() {
       </div>
 
       {/* Mobile preview toggle */}
-      {currentStep < 6 && (
+      {currentStep < 7 && (
         <div className="lg:hidden fixed bottom-20 right-4 z-40">
           <button
             type="button"
@@ -188,7 +191,7 @@ export default function CreatePage() {
       )}
 
       {/* Mobile preview overlay — phone frame owns the scroll, not this wrapper */}
-      {showPreview && currentStep < 6 && (
+      {showPreview && currentStep < 7 && (
         <div className="lg:hidden fixed inset-0 z-30 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl p-4 w-full max-w-sm flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
@@ -211,7 +214,7 @@ export default function CreatePage() {
       )}
 
       {/* Navigation buttons */}
-      {currentStep < 6 && (
+      {currentStep < 7 && (
         <div className="bg-card border-t border-border px-8 py-5 flex-shrink-0">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             {currentStep > 1 ? (
@@ -229,9 +232,9 @@ export default function CreatePage() {
                 onClick={handleNext}
                 disabled={!canProceed()}
               >
-                {currentStep === 5 ? "Finish" : "Next"}
+                {currentStep === 6 ? "Finish" : "Next"}
               </Button>
-              {!canProceed() && (currentStep === 4 || currentStep === 5) && (
+              {!canProceed() && (currentStep === 5 || currentStep === 6) && (
                 <p className="text-xs text-destructive">
                   Add at least one category with one named item
                 </p>

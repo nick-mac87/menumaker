@@ -230,7 +230,7 @@ export default function MenuHero({ menu, onRecordEvent }: MenuHeroProps) {
                 <DeliveryButton
                   href={delivery!.uberEats}
                   label="Uber Eats"
-                  brandColor="#06C167"
+                  brandColor="#000000"
                   onClick={() => handleRecord("delivery_click")}
                 />
               )}
@@ -372,11 +372,12 @@ function DeliveryButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-90 hover:scale-[1.02]"
+      className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-bold transition-all hover:opacity-90 hover:scale-[1.02]"
       style={{
         backgroundColor: brandColor,
         color: "#FFFFFF",
-        boxShadow: `0 2px 8px ${brandColor}50`,
+        borderRadius: "9999px",
+        boxShadow: `0 2px 8px ${brandColor}40`,
       }}
       onClick={onClick}
     >

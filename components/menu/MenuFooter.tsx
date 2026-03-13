@@ -253,7 +253,7 @@ export default function MenuFooter({ menu, onRecordEvent }: MenuFooterProps) {
                 <FooterDeliveryButton
                   href={delivery!.uberEats}
                   label="Uber Eats"
-                  brandColor="#06C167"
+                  brandColor="#000000"
                   onClick={() => handleRecord("delivery_click")}
                 />
               )}
